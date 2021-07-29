@@ -1,61 +1,58 @@
 #include <Adafruit_NeoPixel.h>
-#ifdef __AVR__
-#include <avr/power.h> // Required for 16 MHz Adafruit Trinket
-#endif
+
 #define BTN_PIN         2
 #define NUMPIXELS      14
 #define SHAKING_NUM   150
 #define DELAYVAL      500
 
-
 const int NEO_PIN[] = {6, 7, 8, 9, 10, 11};
 const char *MODELS[46] = {
-  "abcdefhijklmz",      // 0
-  "abcdefjkz",          // 1
-  "abcdefijlmnz",       // 2
-  "abcdefijklnz",       // 3
-  "abcdefhjknz",        // 4
-  "abcdefhiklnz",       // 5
-  "abcdefhiklmnz",      // 6
-  "abcdefhijkz",        // 7
-  "abcdefhijklmnz",     // 8
-  "abcdefhijknz",       // 9
-  "cdhijklmz",          // 10
-  "cdjkz",              // 11
-  "cdijlmnz",           // 12
-  "cdijklnz",           // 13
-  "cdhjknz",            // 14
-  "cdhiklnz",           // 15
-  "cdhiklmnz",          // 16
-  "cdhijkz",            // 17
-  "cdhijklmnz",         // 18
-  "cdhijknz",           // 19
-  "bcefghijklmz",       // 20
-  "bcefgjkz",           // 21
-  "bcefgijlmnz",        // 22
-  "bcefgijklnz",        // 23
-  "bcefghjknz",         // 24
-  "bcefghiklnz",        // 25
-  "bcefghiklmnz",       // 26
-  "bcefghijkz",         // 27
-  "bcefghijklmnz",      // 28
-  "bcefghijknz",        // 29
-  "bcdeghijklmz",       // 30
-  "bcdegjkz",           // 31
-  "bcdegijlmnz",        // 32
-  "bcdegijklnz",        // 33
-  "bcdeghjknz",         // 34
-  "bcdeghiklnz",        // 35
-  "bcdeghiklmnz",       // 36
-  "bcdeghijkz",         // 37
-  "bcdeghijklmnz",      // 38
-  "bcdeghijknz",        // 39
-  "acdghijklmz",        // 40
-  "acdgjkz",            // 41
-  "acdgijlmnz",         // 42
-  "acdgijklnz",         // 43
-  "acdghjknz",          // 44
-  "acdghiklnz",         // 45
+  "abcdefhijklm",      // 0
+  "abcdefjk",          // 1
+  "abcdefijlmn",       // 2
+  "abcdefijkln",       // 3
+  "abcdefhjkn",        // 4
+  "abcdefhikln",       // 5
+  "abcdefhiklmn",      // 6
+  "abcdefhijk",        // 7
+  "abcdefhijklmn",     // 8
+  "abcdefhijkn",       // 9
+  "cdhijklm",          // 10
+  "cdjk",              // 11
+  "cdijlmn",           // 12
+  "cdijkln",           // 13
+  "cdhjkn",            // 14
+  "cdhikln",           // 15
+  "cdhiklmn",          // 16
+  "cdhijk",            // 17
+  "cdhijklmn",         // 18
+  "cdhijkn",           // 19
+  "bcefghijklm",       // 20
+  "bcefgjk",           // 21
+  "bcefgijlmn",        // 22
+  "bcefgijkln",        // 23
+  "bcefghjkn",         // 24
+  "bcefghikln",        // 25
+  "bcefghiklmn",       // 26
+  "bcefghijk",         // 27
+  "bcefghijklmn",      // 28
+  "bcefghijkn",        // 29
+  "bcdeghijklm",       // 30
+  "bcdegjk",           // 31
+  "bcdegijlmn",        // 32
+  "bcdegijkln",        // 33
+  "bcdeghjkn",         // 34
+  "bcdeghikln",        // 35
+  "bcdeghiklmn",       // 36
+  "bcdeghijk",         // 37
+  "bcdeghijklmn",      // 38
+  "bcdeghijkn",        // 39
+  "acdghijklm",        // 40
+  "acdgjk",            // 41
+  "acdgijlmn",         // 42
+  "acdgijkln",         // 43
+  "acdghjkn",          // 44
+  "acdghikln",         // 45
 };
 
 typedef enum {
@@ -63,24 +60,39 @@ typedef enum {
   BtnState_Start,
   BtnState_Run,
   BtnState_Pause,
-  BtnState_Stop
 } BtnState;
 
-short RandomNum[45];
+short ResultNum[6];
+static short RandomNum[45];
 static BtnState btnState;
 static unsigned int seed;
-Adafruit_NeoPixel pixels(14, 6, NEO_GRB + NEO_KHZ800);
 
 void Shaking_RandomNum() {
   short x, y;
+
   randomSeed(seed);
   for (int i = 0; i < SHAKING_NUM; i++) {
-    x = random(1, 11);
-    y = random(1, 11);
+    x = random(1, 46);
+    y = random(1, 46);
     if (x != y) {
       short temp = RandomNum[x];
       RandomNum[x] = RandomNum[y];
       RandomNum[y] = temp;
+    }
+  }
+  for (int i = 0; i < 6; i++) {
+    ResultNum[i] = RandomNum[i + 1];
+  }
+}
+
+void Sort_ResultNum() {
+  for (int i = 0; i < 5; i++) {
+    for (int j = i + 1; j < 6; j++) {
+      if (ResultNum[i] > ResultNum[j]) {
+        short temp = ResultNum[i];
+        ResultNum[i] = ResultNum[j];
+        ResultNum[j] = temp;
+      }
     }
   }
 }
@@ -90,25 +102,41 @@ void Change_BtnState() {
   delay(200);
 }
 
-void Show_Neo(int R, int G, int B, int num) {
+void Neo_Init() {
   for (int i = 0; i < 6; i++) {
-    //Adafruit_NeoPixel pixels(NUMPIXELS, NEO_PIN[i], NEO_GRB + NEO_KHZ800);
+    Adafruit_NeoPixel pixels(NUMPIXELS, NEO_PIN[i], NEO_GRB + NEO_KHZ800);
+    pixels.begin();
+    pixels.clear();
     for (int j = 0; j < NUMPIXELS; j++) {
-      //pixels.clear();
-      //pixels.setPixelColor(MODELS[j], pixels.Color(R, G, B));
-      //pixels.show();
+      if (MODELS[i][j] == '\0') {
+        break;
+      }
+      pixels.setPixelColor(MODELS[0][j] - 'a', pixels.Color(150, 0, 0));
     }
+    delay(10);
+    pixels.show();
+  }
+}
+
+void Neo_Run() {
+  for (int i = 0; i < 6; i++) {
+    Adafruit_NeoPixel pixels(NUMPIXELS, NEO_PIN[i], NEO_GRB + NEO_KHZ800);
+    pixels.begin();
+    pixels.clear();
+    for (int j = 0; j < NUMPIXELS; j++) {
+      if (MODELS[i][j] == '\0') {
+        break;
+      }
+      pixels.setPixelColor(MODELS[ResultNum[i]][j] - 'a', pixels.Color(150, 0, 0));
+    }
+    delay(20);
+    pixels.show();
   }
 }
 
 
 void setup() {
-  //pixels.begin();
   Serial.begin(9600);
-#if defined(__AVR_ATtiny85__) && (F_CPU == 16000000)
-  clock_prescale_set(clock_div_1);
-#endif
-  pixels.begin();
 
   pinMode(BTN_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(BTN_PIN), Change_BtnState, RISING);
@@ -121,22 +149,10 @@ void setup() {
 }
 
 void loop() {
-  /*
-    pixels.clear();
-
-    for(int i=0; i<NUMPIXELS; i++) {
-    pixels.setPixelColor(i, pixels.Color(0, 150, 0));
-    pixels.show();
-
-    delay(DELAYVAL);
-    }
-  */
   switch (btnState) {
     case BtnState_Ready :
       Serial.println("BtnState : Ready");
-      //Show_Neo(150, 0, 0);
-      //Shaking_RandomNum();
-
+      Neo_Init();
       btnState = BtnState_Start;
       break;
 
@@ -148,28 +164,13 @@ void loop() {
 
     case BtnState_Run :
       Serial.println("BtnState : Run");
-      for (int j = 0; j < 46; j++) {
-        pixels.clear();
-        for (int i = 0; i < 13; i++) {
-          if (MODELS[j][i] == 'z') {
-            Serial.println("fucking!!!!!!!!!!!!!!!!!!!!");
-            break;
-          }
-          pixels.setPixelColor((int)(MODELS[j][i] - 'a'), pixels.Color(150, 0, 0));
-          Serial.print("test num : ");
-          Serial.println(MODELS[j][i] - 'a');
-        }
-        pixels.show();
-        delay(1000);
-      }
+      Shaking_RandomNum();
+      Sort_ResultNum();
+      Neo_Run();
       break;
 
     case BtnState_Pause :
       Serial.println("BtnState : Pause");
-      break;
-
-    case BtnState_Stop :
-      Serial.println("BtnState : Stop");
       break;
 
     default:
